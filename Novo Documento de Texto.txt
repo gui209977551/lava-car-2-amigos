@@ -1,0 +1,88 @@
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:10000";
+
+function App() {
+  const [email, setEmail] = useState("admin@lavacar.local");
+  const [password, setPassword] = useState("admin123");
+  const [token, setToken] = useState(null);
+  const [lavagens, setLavagens] = useState([]);
+  const [tipo, setTipo] = useState("");
+  const [valor, setValor] = useState("");
+  const [pagamento, setPagamento] = useState("Dinheiro");
+
+  const login = async () => {
+    const res = await axios.post(`${API_URL}/login`, { email, password });
+    setToken(res.data.token);
+  };
+
+  const carregarLavagens = async () => {
+    const res = await axios.get(`${API_URL}/lavagens`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setLavagens(res.data);
+  };
+
+  const adicionarLavagem = async () => {
+    await axios.post(
+      `${API_URL}/lavagens`,
+      { tipo, valor, pagamento },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    carregarLavagens();
+  };
+
+  useEffect(() => {
+    if (token) carregarLavagens();
+  }, [token]);
+
+  if (!token)
+    return (
+      <div>
+        <h2>Login</h2>
+        <input value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button onClick={login}>Entrar</button>
+      </div>
+    );
+
+  return (
+    <div>
+      <h2>Lava Car</h2>
+      <div>
+        <input
+          placeholder="Tipo de Lavagem"
+          value={tipo}
+          onChange={(e) => setTipo(e.target.value)}
+        />
+        <input
+          placeholder="Valor"
+          type="number"
+          value={valor}
+          onChange={(e) => setValor(e.target.value)}
+        />
+        <select value={pagamento} onChange={(e) => setPagamento(e.target.value)}>
+          <option>Dinheiro</option>
+          <option>Cartão</option>
+          <option>Pix</option>
+        </select>
+        <button onClick={adicionarLavagem}>Adicionar</button>
+      </div>
+      <h3>Histórico</h3>
+      <ul>
+        {lavagens.map((l) => (
+          <li key={l.id}>
+            {l.tipo} - R$ {l.valor} - {l.pagamento} ({l.data})
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default App;
